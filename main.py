@@ -13,7 +13,7 @@ from microcontroller import watchdog as w
 from watchdog import WatchDogMode
 w.timeout=2.5 # Set a timeout of 2.5 seconds
 w.mode = WatchDogMode.RAISE
-w.feed()
+
 nc = None
 while nc is None:
     try:
@@ -22,6 +22,7 @@ while nc is None:
         pass
 
 key = b'\x32\x67\x2f\x79\x74\xad\x43\x45\x1d\x9c\x6c\x89\x4a\x0e\x87\x64'
+w.feed()
 
 try:
     from aesio import AES,MODE_ECB
@@ -68,11 +69,36 @@ class FaceMask:
         self.current_image = 1
         self.last_image = 2
         self.can_blink = True
+        self.can_blink = True
+        self.image_mapping = {
+            0: "tongue_out",
+            1: "grimace1",
+            2: "slight_smile",
+            3: "slight_open_mouth_happy",
+            4: "grimace2",
+            5: "slight_smile_look_right",
+            6: "slight_smile_blink1",
+            7: "slight_smile_blink2",
+            8: "slight_open_mouth_happy_look_left",
+            9: "slight_open_mouth_happy_look_right",
+            10: "open_mouth_happy",
+            11: "slight_open_mouth_happy_blink1",
+            12: "slight_open_mouth_happy_blink2",
+            13: "slight_open_mouth_happy_look_right",
+            14: "slight_open_mouth_happy_look_left",
+            15: "tongue_teeth",
+            16: "shock",
+            17: "oh",
+            18: "mouth_fully_open",
+            19: "grimace1_happy"
+        }
+        self.blink_probability = 4 # 4% chance of blinking
     def send_image(self):
         if self.service:
             try:
                 self.service.play = self.images[self.current_image]
                 self.last_image = self.current_image
+                print("Image: "+ self.image_mapping[self.current_image])
             except Exception as e:
                 print('Error setting image ', e)
                 if self.mask_connection and self.mask_connection.connected:
@@ -90,7 +116,7 @@ class FaceMask:
             self._init_mask_service()
     def set_image(self, id):
         self.current_image = id
-
+        print("Image: "+ self.image_mapping[self.current_image])
     def _init_mask_service(self):
             while True:
                 self.mask_connection = None
@@ -109,7 +135,8 @@ class FaceMask:
                                     if self.mask_connection.connected:
                                         try:
                                             self.mask_connection.disconnect()
-                                        except:
+                                        except Exception as e:
+                                            print("Error disconnecting:", e)
                                             pass
                                     self.mask_connection = None
                                     ble.stop_scan()
@@ -117,49 +144,57 @@ class FaceMask:
                             else:
                                 ble.stop_scan()
                                 break
-                except:
+                except Exception as e:
+                    print("Error during scan:",e)
                     pass
+                if self.mask_connection is None:
+                  print("Could not find mask")
 
 resting_grin_frames = [2,4,6,8]
 resting_smile_frames = [2,3]
 mask = FaceMask()
 
 async def update_mask():
+    global mask
+    global nc
+    x, y = nc.joystick
     for i in range(10):
-        if nc.buttons.C:
-            mask.set_image(random.choice([0,1,8, 13,14,15,16,17,18,19]))
+        if nc.buttons.Z:
+          if nc.buttons.C:
+            pass
+          else:
+            if mask.can_blink and random.randint(0,100) < mask.blink_probability:
+                for j in [6, 7,  7, 6]:
+                    mask.set_image(j)
+                    mask.send_image()
+                    await asynccp.delay(1 / 12)
+                mask.can_blink = False
+            if x > 200:
+                mask.set_image(5)
+            elif x > 120:
+                mask.set_image(2)
+            elif x < 50:
+                mask.set_image(4)
+            elif x < 100:
+                mask.set_image(3)
         else:
-            x, y = nc.joystick
-            if nc.buttons.Z:
-                if mask.can_blink and random.randint(0,100) < 4:
-                    for j in [6, 7,  7, 6]:
-                        mask.set_image(j)
-                        mask.send_image()
-                        await asynccp.delay(1 / 12)
-                    mask.can_blink = False
-                if x > 200:
-                    mask.set_image(5)
-                elif x > 120:
-                    mask.set_image(2)
-                elif x < 50:
-                    mask.set_image(4)
-                elif x < 100:
-                    mask.set_image(3)
-            else:
-                if mask.can_blink and random.randint(0,100) < 4:
-                    for j in [12, 11, 11, 12]:
-                        mask.set_image(j)
-                        mask.send_image()
-                        await asynccp.delay(1 / 12)
-                    mask.can_blink = False
-                if x > 200:
-                    mask.set_image(10)
-                elif x > 120:
-                    mask.set_image(8)
-                elif x < 50:
-                    mask.set_image(9)
-                elif x < 100:
-                    mask.set_image(8)
+          if nc.buttons.C:
+            mask.set_image(random.choice([0,1,8, 13,14,15,16,17,18,19]))
+          else:
+            if mask.can_blink and random.randint(0,100) < mask.blink_probability:
+                for j in [12, 11, 11, 12]:
+                    mask.set_image(j)
+                    mask.send_image()
+                    await asynccp.delay(1 / 12)
+                mask.can_blink = False
+            if x > 200:
+                mask.set_image(10)
+            elif x > 120:
+                mask.set_image(8)
+            elif x < 50:
+                mask.set_image(9)
+            elif x < 100:
+                mask.set_image(8)
         await asynccp.delay(1/10)
 async def update_frame():
     mask.send_image()
@@ -171,3 +206,4 @@ asynccp.schedule(Duration.of_milliseconds(100), coroutine_function=update_mask)
 asynccp.schedule(Duration.of_milliseconds(1000/24), coroutine_function=update_frame)
 
 asynccp.run()
+w.feed()
