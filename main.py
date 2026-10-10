@@ -176,6 +176,7 @@ async def update_mask():
                     mask.set_image(8)
         await asynccp.delay(1/10)
 async def update_frame():
+    w.feed()  # the watchdog resets the board if this loop ever stops
     mask.send_image()
 async def allow_blink():
     mask.can_blink = True
