@@ -39,6 +39,20 @@ except ImportError:
 
 from adafruit_ble.uuid import VendorUUID, StandardUUID
 
+# Optional: connect only to the mask with this address, e.g. "AA:BB:CC:DD:EE:01".
+# With None, the first advertiser of the mask service is used.
+MASK_ADDRESS = None
+
+
+def address_matches(wanted, address_bytes):
+    # BLE address bytes arrive least significant first, so compare reversed.
+    if wanted is None:
+        return True
+    try:
+        return bytes(int(part, 16) for part in wanted.split(':'))[::-1] == bytes(address_bytes)
+    except ValueError:
+        return False
+
 msgs = [mask_encrypt(b'\x06PLAY\x01\x03;\x97\xf2\xf3U\xa9r\x13\x8b'),
         mask_encrypt(b'\x06PLAY\x01\x04;\x97\xf2\xf3U\xa9r\x13\x8b'),
         mask_encrypt(b'\x06PLAY\x01\x03;\x97\xf2\xf3U\xa9r\x13\x8b')]
@@ -96,7 +110,7 @@ class FaceMask:
                 self.mask_connection = None
                 try:
                     for adv in ble.start_scan(ProvideServicesAdvertisement, timeout=5):
-                        if MaskService in adv.services:
+                        if MaskService in adv.services and address_matches(MASK_ADDRESS, adv.address.address_bytes):
                             self.mask_connection = ble.connect(adv)
 
                             if self.mask_connection and self.mask_connection.connected:
