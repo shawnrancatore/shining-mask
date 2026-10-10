@@ -5,7 +5,7 @@
 <!-- bricoleur:intro -->
 <!-- /bricoleur:intro -->
 
-![A Meeseeks face on the LED mask, changing as the controller moves](./examples/MeeseeksMask/MeeseeksMaskInAction.gif?raw=true "Look at me!")
+![A Meeseeks face on the LED mask, changing as the joystick moves](./examples/MeeseeksMask/MeeseeksMaskInAction.gif?raw=true "Look at me!")
 
 ## What it does
 
@@ -60,7 +60,7 @@ The code reads the joystick's `x` axis (0 to 255) and the two buttons. The `y` a
 
 ## How it works
 
-`main.py` writes to one characteristic, `d44bc439-abfd-45a2-b575-925416129600`, on the mask's service. Each write is 16 bytes, `\x06PLAY\x01`, the slot number and nine fixed bytes, encrypted with AES-128 in ECB mode. The key is in `main.py`; it is the mask's protocol key, not a secret of yours.
+`main.py` writes to one characteristic, `d44bc439-abfd-45a2-b575-925416129600`, on the mask's service. Each write is 16 bytes, `\x06PLAY\x01`, the slot number and nine fixed bytes, encrypted with AES-128 in ECB mode. The key is in `main.py`.
 
 `asynccp` runs three tasks:
 
@@ -68,14 +68,14 @@ The code reads the joystick's `x` axis (0 to 255) and the two buttons. The `y` a
 - every 100 ms, read the Nunchuk and choose the image;
 - every second, allow one more blink.
 
-The watchdog is set to 2.5 seconds and resets the board if the loop stops feeding it. If a write fails, the code drops the connection and calls `supervisor.reload()`, which restarts the program.
+The watchdog is armed just before the loop starts, in `RESET` mode with a 2.5 second timeout, so waiting for the Nunchuk or the mask at startup is never cut short. The frame task feeds it. If the loop stalls, including during a long reconnect, the board resets and waits again at startup. If a write fails, the code drops the connection and calls `supervisor.reload()`, which restarts the program.
 
 ## What it deliberately does not do
 
 - It does not pair or bond with the mask. Without `MASK_ADDRESS`, it connects to any device advertising the mask's service.
 - It does not upload images. The mask must already hold them.
 - It does not read the accelerometer, and blinks do not respond to movement.
-- It is untested on hardware since the watchdog and `MASK_ADDRESS` changes; those two are checked only by `python -m py_compile main.py` and a test of the address comparison.
+- The watchdog change and `MASK_ADDRESS` have not been run on hardware yet. The address comparison was checked by hand in plain Python and will be confirmed on hardware.
 
 ## The pixel images
 

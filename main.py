@@ -11,9 +11,6 @@ from asynccp.time import Duration
 
 from microcontroller import watchdog as w
 from watchdog import WatchDogMode
-w.timeout=2.5 # Set a timeout of 2.5 seconds
-w.mode = WatchDogMode.RAISE
-w.feed()
 nc = None
 while nc is None:
     try:
@@ -37,7 +34,7 @@ except ImportError:
     def mask_encrypt(value):
         return cipher.encrypt(value)
 
-from adafruit_ble.uuid import VendorUUID, StandardUUID
+from adafruit_ble.uuid import VendorUUID
 
 # Optional: connect only to the mask with this address, e.g. "AA:BB:CC:DD:EE:01".
 # With None, the first advertiser of the mask service is used.
@@ -185,4 +182,10 @@ asynccp.schedule(Duration.of_milliseconds(1000), coroutine_function=allow_blink)
 asynccp.schedule(Duration.of_milliseconds(100), coroutine_function=update_mask)
 asynccp.schedule(Duration.of_milliseconds(1000/24), coroutine_function=update_frame)
 
+# The watchdog is armed only once the loop runs, so waiting for the Nunchuk or
+# the mask at startup is never cut short. If the loop stalls (including a long
+# reconnect), the board resets and waits again at startup.
+w.timeout = 2.5
+w.mode = WatchDogMode.RESET
+w.feed()
 asynccp.run()
