@@ -3,6 +3,7 @@
 **Drive an LED face mask from a Wii Nunchuk, with a CircuitPython board in between.**
 
 <!-- bricoleur:intro -->
+> Part of **[bricoleur.ai](https://bricoleur.ai)**: small, honest tools cobbled together from the AI-era parts at hand. Related: **[keeBLEr](https://github.com/shawnrancatore/keeBLEr)**, another small board turned into a Bluetooth bridge.
 <!-- /bricoleur:intro -->
 
 ![A Meeseeks face on the LED mask, changing as the joystick moves](./examples/MeeseeksMask/MeeseeksMaskInAction.gif?raw=true "Look at me!")
@@ -86,4 +87,6 @@ The pixel images in `examples/MeeseeksMask/` are the author's own fan art of a c
 Setup, running it and drawing your own expressions: **[bricoleur.ai/projects/shining-mask](https://bricoleur.ai/projects/shining-mask)**.
 
 <!-- bricoleur:footer -->
+---
+Part of **[bricoleur.ai](https://bricoleur.ai)** · [Full guide](https://bricoleur.ai/projects/shining-mask) · MIT © 2026 Shawn Rancatore
 <!-- /bricoleur:footer -->
